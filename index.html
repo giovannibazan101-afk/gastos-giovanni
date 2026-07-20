@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Libro de Gastos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F1ECDE;
+    --paper-dark:#E7E0CC;
+    --ink:#2B2A24;
+    --ink-soft:#5C594C;
+    --green:#3F6B4E;
+    --green-soft:#E4EBE1;
+    --rust:#7A3B2E;
+    --rust-soft:#F0DFD9;
+    --gold:#B8912A;
+    --gold-soft:#F3EBD3;
+    --line:#D3C9AE;
+    --line-strong:#B8AC88;
+    --white:#FBF9F2;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:880px;margin:0 auto;padding:24px 20px 80px;}
+
+  header.top{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:14px;margin-bottom:18px;
+  }
+  header.top h1{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:30px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  header.top .fecha{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    text-align:right;
+  }
+
+  nav.tabs{
+    display:flex;gap:4px;margin-bottom:20px;
+    border-bottom:1px solid var(--line);
+    overflow-x:auto;
+  }
+  nav.tabs button{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:13px;font-weight:500;
+    background:none;border:none;
+    padding:10px 14px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    white-space:nowrap;
+  }
+  nav.tabs button.active{
+    color:var(--ink);
+    border-bottom:2px solid var(--rust);
+  }
+
+  section.view{display:none;}
+  section.view.active{display:block;}
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:20px;
+    margin-bottom:16px;
+    position:relative;
+  }
+  .card::before{
+    content:"";
+    position:absolute;top:0;left:16px;right:16px;height:6px;
+    background:repeating-linear-gradient(90deg, transparent 0 6px, var(--paper) 6px 10px);
+    transform:translateY(-3px);
+  }
+  .card h2{
+    font-family:'Fraunces', serif;
+    font-size:18px;font-weight:600;
+    margin:0 0 14px;
+  }
+
+  label{
+    display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;
+    color:var(--ink-soft);margin-bottom:4px;margin-top:12px;
+  }
+  label:first-of-type{margin-top:0;}
+  input, select{
+    width:100%;padding:9px 10px;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:14px;
+    border:1px solid var(--line-strong);
+    border-radius:3px;
+    background:var(--white);
+    color:var(--ink);
+  }
+  input:focus, select:focus{outline:2px solid var(--gold);outline-offset:1px;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .hidden{display:none !important;}
+
+  button.primary{
+    margin-top:18px;width:100%;
+    background:var(--ink);color:var(--white);
+    border:none;border-radius:3px;
+    padding:12px;font-size:14px;font-weight:600;
+    font-family:'IBM Plex Sans', sans-serif;
+    cursor:pointer;
+  }
+  button.primary:hover{background:var(--rust);}
+  button.secondary{
+    background:none;border:1px solid var(--ink);color:var(--ink);
+    border-radius:3px;padding:9px 14px;font-size:13px;font-weight:500;
+    cursor:pointer;font-family:'IBM Plex Sans', sans-serif;
+  }
+  button.secondary:hover{background:var(--ink);color:var(--white);}
+  button.link{
+    background:none;border:none;color:var(--rust);font-size:12px;
+    cursor:pointer;text-decoration:underline;padding:0;font-family:'IBM Plex Sans', sans-serif;
+  }
+
+  /* ledger entry rows */
+  .entry{
+    display:grid;grid-template-columns:70px 1fr auto auto;gap:10px;
+    align-items:center;
+    padding:10px 0;border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+  .entry:last-child{border-bottom:none;}
+  .entry .fecha-c{font-family:'IBM Plex Mono', monospace;color:var(--ink-soft);font-size:12px;}
+  .entry .desc{font-weight:500;}
+  .entry .cat{font-size:11px;color:var(--ink-soft);display:block;}
+  .entry .monto{
+    font-family:'IBM Plex Mono', monospace;font-weight:600;
+    text-align:right;white-space:nowrap;
+  }
+  .entry .del{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:14px;}
+  .entry .del:hover{color:var(--rust);}
+  .empty{color:var(--ink-soft);font-size:13px;padding:12px 0;}
+
+  /* summary bars (tally style) */
+  .bar-row{margin-bottom:12px;}
+  .bar-row .lbl{
+    display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;
+  }
+  .bar-row .lbl .amt{font-family:'IBM Plex Mono', monospace;font-weight:600;}
+  .bar-track{height:10px;background:var(--paper-dark);border-radius:2px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--rust);border-radius:2px;}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .stat{
+    background:var(--white);border:1px solid var(--line);border-radius:3px;
+    padding:16px;
+  }
+  .stat .k{font-size:11px;text-transform:uppercase;color:var(--ink-soft);letter-spacing:0.04em;}
+  .stat .v{font-family:'IBM Plex Mono', monospace;font-size:22px;font-weight:600;margin-top:4px;}
+  .stat.rust .v{color:var(--rust);}
+  .stat.green .v{color:var(--green);}
+  .stat.gold .v{color:var(--gold);}
+
+  .tag{
+    display:inline-block;font-size:10px;padding:2px 6px;border-radius:10px;
+    font-weight:600;letter-spacing:0.02em;
+  }
+  .tag.pend{background:var(--rust-soft);color:var(--rust);}
+  .tag.ok{background:var(--green-soft);color:var(--green);}
+
+  .list-item{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:12px 0;border-bottom:1px solid var(--line);
+  }
+  .list-item:last-child{border-bottom:none;}
+  .list-item .name{font-weight:600;font-size:14px;}
+  .list-item .sub{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .list-item .right{text-align:right;}
+  .list-item .right .amt{font-family:'IBM Plex Mono', monospace;font-weight:600;font-size:15px;}
+
+  .sync-status{
+    font-size:12px;color:var(--ink-soft);margin-top:10px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .note{
+    font-size:12px;color:var(--ink-soft);line-height:1.5;margin-top:8px;
+  }
+  select.small, input.small{width:auto;display:inline-block;}
+  .month-nav{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-family:'IBM Plex Mono', monospace;}
+  .month-nav button{background:none;border:1px solid var(--line-strong);border-radius:3px;cursor:pointer;padding:4px 10px;font-family:'IBM Plex Mono', monospace;}
+  .month-nav .m{font-weight:600;font-size:14px;min-width:150px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <h1>Mi Libro de Gastos</h1>
+    <div class="fecha" id="hoyLabel"></div>
+  </header>
+
+  <nav class="tabs">
+    <button data-view="registrar" class="active">Registrar</button>
+    <button data-view="resumen">Resumen</button>
+    <button data-view="tarjetas">Tarjetas</button>
+    <button data-view="deudas">Deudas</button>
+    <button data-view="ajustes">Ajustes</button>
+  </nav>
+
+  <!-- REGISTRAR -->
+  <section class="view active" id="view-registrar">
+    <div class="card">
+      <h2>Nuevo gasto</h2>
+      <div class="row">
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="f-fecha">
+        </div>
+        <div>
+          <label>Monto (Gs.)</label>
+          <input type="number" id="f-monto" placeholder="0" min="0" step="1">
+        </div>
+      </div>
+      <label>Categoría</label>
+      <select id="f-categoria"></select>
+      <div id="f-categoria-otro-wrap" class="hidden">
+        <label>Nombre de la categoría nueva</label>
+        <input type="text" id="f-categoria-otro" placeholder="Ej: Mantenimiento hogar">
+      </div>
+
+      <label>Descripción</label>
+      <input type="text" id="f-desc" placeholder="Ej: Nafta en Puma, YPF...">
+
+      <label>Medio de pago</label>
+      <select id="f-medio">
+        <option value="Efectivo">Efectivo</option>
+        <option value="Tarjeta">Tarjeta de crédito</option>
+        <option value="Transferencia">Transferencia / débito</option>
+      </select>
+
+      <div id="f-tarjeta-wrap" class="hidden">
+        <label>Tarjeta</label>
+        <select id="f-tarjeta"></select>
+        <div class="row">
+          <div>
+            <label>Cuota actual</label>
+            <input type="number" id="f-cuota-actual" min="1" placeholder="1">
+          </div>
+          <div>
+            <label>Total de cuotas</label>
+            <input type="number" id="f-cuota-total" min="1" placeholder="1">
+          </div>
+        </div>
+      </div>
+
+      <div id="f-deuda-wrap" class="hidden">
+        <label>¿A quién le debés?</label>
+        <select id="f-deuda-persona"></select>
+      </div>
+
+      <button class="primary" id="btnGuardar">Guardar gasto</button>
+      <div class="sync-status" id="syncStatusForm"></div>
+    </div>
+
+    <div class="card">
+      <h2>Últimos movimientos</h2>
+      <div id="listaReciente"></div>
+    </div>
+  </section>
+
+  <!-- RESUMEN -->
+  <section class="view" id="view-resumen">
+    <div class="month-nav">
+      <button id="mesPrev">←</button>
+      <div class="m" id="mesLabel"></div>
+      <button id="mesNext">→</button>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat rust">
+        <div class="k">Gastado este mes</div>
+        <div class="v" id="statTotalMes">Gs. 0</div>
+      </div>
+      <div class="stat gold">
+        <div class="k">Categoría top</div>
+        <div class="v" id="statTopCat" style="font-size:16px;">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>En qué gasto más</h2>
+      <div id="barrasCategoria"></div>
+      <p class="empty" id="resumenVacio" style="display:none;">Todavía no hay gastos registrados este mes.</p>
+    </div>
+  </section>
+
+  <!-- TARJETAS -->
+  <section class="view" id="view-tarjetas">
+    <div class="card">
+      <h2>Agregar tarjeta</h2>
+      <label>Nombre (ej: Visa Banco Continental)</label>
+      <input type="text" id="t-nombre" placeholder="Nombre de la tarjeta">
+      <label>Cierre de facturación (día del mes)</label>
+      <input type="number" id="t-cierre" min="1" max="31" placeholder="Ej: 15">
+      <button class="primary" id="btnAddTarjeta">Agregar tarjeta</button>
+    </div>
+    <div class="card">
+      <h2>Tus tarjetas</h2>
+      <div id="listaTarjetas"></div>
+      <p class="empty" id="tarjetasVacio" style="display:none;">Todavía no agregaste ninguna tarjeta.</p>
+    </div>
+  </section>
+
+  <!-- DEUDAS -->
+  <section class="view" id="view-deudas">
+    <div class="card">
+      <h2>Agregar deuda</h2>
+      <label>Persona / entidad (ej: Junior Bazán)</label>
+      <input type="text" id="d-nombre" placeholder="Nombre">
+      <label>Monto total adeudado (Gs.)</label>
+      <input type="number" id="d-monto" min="0" placeholder="0">
+      <button class="primary" id="btnAddDeuda">Agregar deuda</button>
+    </div>
+    <div class="card">
+      <h2>Tus deudas</h2>
+      <div id="listaDeudas"></div>
+      <p class="empty" id="deudasVacio" style="display:none;">No tenés deudas registradas.</p>
+    </div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section class="view" id="view-ajustes">
+    <div class="card">
+      <h2>Conectar con Google Sheets</h2>
+      <p class="note">Pegá aquí la URL de tu Google Apps Script (te paso las instrucciones para crearla aparte). Cada gasto que guardes se enviará automáticamente a tu planilla.</p>
+      <label>URL de la Web App</label>
+      <input type="text" id="a-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+        <input type="checkbox" id="a-auto" style="width:auto;">
+        <span style="text-transform:none;font-size:13px;color:var(--ink);">Sincronizar automáticamente al guardar un gasto</span>
+      </label>
+      <button class="primary" id="btnGuardarAjustes">Guardar ajustes</button>
+      <button class="secondary" id="btnSyncAll" style="margin-top:10px;width:100%;">Sincronizar todo ahora</button>
+      <div class="sync-status" id="syncStatusAjustes"></div>
+    </div>
+    <div class="card">
+      <h2>Datos</h2>
+      <p class="note">Tus datos se guardan automáticamente en este navegador. Podés borrar todo si querés empezar de cero.</p>
+      <button class="secondary" id="btnReset">Borrar todos los datos</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const CATS_DEFAULT = ["Combustible","Comida","Meriendas","Repuestos","Cuota Cooperativa","Seguro de Auto","WiFi / Internet","Pago Tarjeta de Crédito","Deudas","Otro..."];
+
+let state = {
+  gastos: [],
+  tarjetas: [],
+  deudas: [],
+  categoriasExtra: [],
+  config: { sheetUrl:"", autoSync:false }
+};
+
+let mesActual = new Date();
+mesActual.setDate(1);
+
+function fmtGs(n){
+  n = Math.round(n||0);
+  return "Gs. " + n.toLocaleString('es-PY');
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+async function loadState(){
+  try{
+    const g = await window.storage.get('gastos');
+    if(g) state.gastos = JSON.parse(g.value);
+  }catch(e){}
+  try{
+    const t = await window.storage.get('tarjetas');
+    if(t) state.tarjetas = JSON.parse(t.value);
+  }catch(e){}
+  try{
+    const d = await window.storage.get('deudas');
+    if(d) state.deudas = JSON.parse(d.value);
+  }catch(e){}
+  try{
+    const c = await window.storage.get('categoriasExtra');
+    if(c) state.categoriasExtra = JSON.parse(c.value);
+  }catch(e){}
+  try{
+    const cfg = await window.storage.get('config');
+    if(cfg) state.config = JSON.parse(cfg.value);
+  }catch(e){}
+}
+
+async function saveGastos(){
+  try{ await window.storage.set('gastos', JSON.stringify(state.gastos)); }catch(e){ console.error(e); }
+}
+async function saveTarjetas(){
+  try{ await window.storage.set('tarjetas', JSON.stringify(state.tarjetas)); }catch(e){ console.error(e); }
+}
+async function saveDeudas(){
+  try{ await window.storage.set('deudas', JSON.stringify(state.deudas)); }catch(e){ console.error(e); }
+}
+async function saveCategoriasExtra(){
+  try{ await window.storage.set('categoriasExtra', JSON.stringify(state.categoriasExtra)); }catch(e){ console.error(e); }
+}
+async function saveConfig(){
+  try{ await window.storage.set('config', JSON.stringify(state.config)); }catch(e){ console.error(e); }
+}
+
+function todasCategorias(){
+  return CATS_DEFAULT.slice(0, CATS_DEFAULT.length-1).concat(state.categoriasExtra).concat(["Otro..."]);
+}
+
+function poblarCategorias(){
+  const sel = document.getElementById('f-categoria');
+  sel.innerHTML = "";
+  todasCategorias().forEach(c=>{
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    sel.appendChild(o);
+  });
+}
+
+function poblarTarjetasSelect(){
+  const sel = document.getElementById('f-tarjeta');
+  sel.innerHTML = "";
+  if(state.tarjetas.length===0){
+    const o = document.createElement('option');
+    o.value=""; o.textContent="Agregá una tarjeta primero en la pestaña Tarjetas";
+    sel.appendChild(o);
+    return;
+  }
+  state.tarjetas.forEach(t=>{
+    const o = document.createElement('option');
+    o.value = t.id; o.textContent = t.nombre;
+    sel.appendChild(o);
+  });
+}
+
+function poblarDeudasSelect(){
+  const sel = document.getElementById('f-deuda-persona');
+  sel.innerHTML = "";
+  if(state.deudas.length===0){
+    const o = document.createElement('option');
+    o.value=""; o.textContent="Agregá una deuda primero en la pestaña Deudas";
+    sel.appendChild(o);
+    return;
+  }
+  state.deudas.forEach(d=>{
+    const o = document.createElement('option');
+    o.value = d.id; o.textContent = d.nombre;
+    sel.appendChild(o);
+  });
+}
+
+// --- tabs ---
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('section.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+    if(btn.dataset.view==='resumen') renderResumen();
+  });
+});
+
+// --- form conditional fields ---
+document.getElementById('f-categoria').addEventListener('change', (e)=>{
+  document.getElementById('f-categoria-otro-wrap').classList.toggle('hidden', e.target.value!=="Otro...");
+  document.getElementById('f-deuda-wrap').classList.toggle('hidden', e.target.value!=="Deudas");
+  if(e.target.value==="Deudas") poblarDeudasSelect();
+});
+document.getElementById('f-medio').addEventListener('change', (e)=>{
+  document.getElementById('f-tarjeta-wrap').classList.toggle('hidden', e.target.value!=="Tarjeta");
+  if(e.target.value==="Tarjeta") poblarTarjetasSelect();
+});
+
+// --- guardar gasto ---
+document.getElementById('btnGuardar').addEventListener('click', async ()=>{
+  const monto = parseFloat(document.getElementById('f-monto').value);
+  if(!monto || monto<=0){ alert('Ingresá un monto válido.'); return; }
+  let categoria = document.getElementById('f-categoria').value;
+  if(categoria==="Otro..."){
+    const nueva = document.getElementById('f-categoria-otro').value.trim();
+    if(!nueva){ alert('Escribí el nombre de la nueva categoría.'); return; }
+    categoria = nueva;
+    if(!state.categoriasExtra.includes(nueva)){
+      state.categoriasExtra.push(nueva);
+      await saveCategoriasExtra();
+      poblarCategorias();
+    }
+  }
+  const fecha = document.getElementById('f-fecha').value || new Date().toISOString().slice(0,10);
+  const desc = document.getElementById('f-desc').value.trim() || categoria;
+  const medio = document.getElementById('f-medio').value;
+
+  let tarjetaId="", tarjetaNombre="", cuotaActual="", cuotaTotal="";
+  if(medio==="Tarjeta"){
+    tarjetaId = document.getElementById('f-tarjeta').value;
+    const t = state.tarjetas.find(x=>x.id===tarjetaId);
+    tarjetaNombre = t ? t.nombre : "";
+    cuotaActual = document.getElementById('f-cuota-actual').value || "1";
+    cuotaTotal = document.getElementById('f-cuota-total').value || "1";
+  }
+  let deudaId="", deudaNombre="";
+  if(categoria==="Deudas"){
+    deudaId = document.getElementById('f-deuda-persona').value;
+    const d = state.deudas.find(x=>x.id===deudaId);
+    deudaNombre = d ? d.nombre : "";
+  }
+
+  const entry = {
+    id: uid(), fecha, categoria, descripcion:desc, monto, medioPago:medio,
+    tarjetaId, tarjeta:tarjetaNombre, cuotaActual, cuotaTotal,
+    deudaId, acreedor:deudaNombre, synced:false
+  };
+  state.gastos.unshift(entry);
+  await saveGastos();
+
+  document.getElementById('f-monto').value="";
+  document.getElementById('f-desc').value="";
+  document.getElementById('f-categoria-otro').value="";
+
+  renderReciente();
+
+  if(state.config.autoSync && state.config.sheetUrl){
+    syncEntry(entry, 'syncStatusForm');
+  }
+});
+
+function renderReciente(){
+  const box = document.getElementById('listaReciente');
+  box.innerHTML="";
+  const recientes = state.gastos.slice(0,15);
+  if(recientes.length===0){
+    box.innerHTML = '<p class="empty">Todavía no registraste ningún gasto.</p>';
+    return;
+  }
+  recientes.forEach(g=>{
+    const row = document.createElement('div');
+    row.className='entry';
+    row.innerHTML = `
+      <span class="fecha-c">${g.fecha}</span>
+      <span><span class="desc">${escapeHtml(g.descripcion)}</span><span class="cat">${escapeHtml(g.categoria)}${g.tarjeta ? ' · '+escapeHtml(g.tarjeta):''}</span></span>
+      <span class="monto">${fmtGs(g.monto)}</span>
+      <button class="del" title="Eliminar" data-id="${g.id}">✕</button>
+    `;
+    box.appendChild(row);
+  });
+  box.querySelectorAll('.del').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      state.gastos = state.gastos.filter(g=>g.id!==b.dataset.id);
+      await saveGastos();
+      renderReciente();
+    });
+  });
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// --- resumen ---
+document.getElementById('mesPrev').addEventListener('click', ()=>{
+  mesActual.setMonth(mesActual.getMonth()-1);
+  renderResumen();
+});
+document.getElementById('mesNext').addEventListener('click', ()=>{
+  mesActual.setMonth(mesActual.getMonth()+1);
+  renderResumen();
+});
+
+function renderResumen(){
+  const y = mesActual.getFullYear(), m = mesActual.getMonth();
+  const nombreMes = mesActual.toLocaleDateString('es-PY', {month:'long', year:'numeric'});
+  document.getElementById('mesLabel').textContent = nombreMes.charAt(0).toUpperCase()+nombreMes.slice(1);
+
+  const delMes = state.gastos.filter(g=>{
+    const f = new Date(g.fecha+"T00:00:00");
+    return f.getFullYear()===y && f.getMonth()===m;
+  });
+
+  const total = delMes.reduce((s,g)=>s+g.monto,0);
+  document.getElementById('statTotalMes').textContent = fmtGs(total);
+
+  const porCat = {};
+  delMes.forEach(g=>{ porCat[g.categoria] = (porCat[g.categoria]||0) + g.monto; });
+  const ordenado = Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
+
+  document.getElementById('statTopCat').textContent = ordenado.length ? ordenado[0][0] : "—";
+
+  const box = document.getElementById('barrasCategoria');
+  box.innerHTML = "";
+  document.getElementById('resumenVacio').style.display = ordenado.length ? 'none' : 'block';
+  const max = ordenado.length ? ordenado[0][1] : 1;
+  ordenado.forEach(([cat, monto])=>{
+    const pct = Math.max(4, Math.round((monto/max)*100));
+    const row = document.createElement('div');
+    row.className='bar-row';
+    row.innerHTML = `
+      <div class="lbl"><span>${escapeHtml(cat)}</span><span class="amt">${fmtGs(monto)}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+    `;
+    box.appendChild(row);
+  });
+}
+
+// --- tarjetas ---
+document.getElementById('btnAddTarjeta').addEventListener('click', async ()=>{
+  const nombre = document.getElementById('t-nombre').value.trim();
+  const cierre = document.getElementById('t-cierre').value;
+  if(!nombre){ alert('Ingresá el nombre de la tarjeta.'); return; }
+  state.tarjetas.push({id:uid(), nombre, cierre});
+  await saveTarjetas();
+  document.getElementById('t-nombre').value="";
+  document.getElementById('t-cierre').value="";
+  renderTarjetas();
+});
+
+function renderTarjetas(){
+  const box = document.getElementById('listaTarjetas');
+  box.innerHTML="";
+  document.getElementById('tarjetasVacio').style.display = state.tarjetas.length ? 'none':'block';
+  state.tarjetas.forEach(t=>{
+    const gastosTarjeta = state.gastos.filter(g=>g.tarjetaId===t.id);
+    const totalTarjeta = gastosTarjeta.reduce((s,g)=>s+g.monto,0);
+    const row = document.createElement('div');
+    row.className='list-item';
+    row.innerHTML = `
+      <div>
+        <div class="name">${escapeHtml(t.nombre)}</div>
+        <div class="sub">${t.cierre ? 'Cierre día '+t.cierre+' · ':''}${gastosTarjeta.length} movimiento(s)</div>
+      </div>
+      <div class="right">
+        <div class="amt">${fmtGs(totalTarjeta)}</div>
+        <button class="link" data-id="${t.id}">eliminar tarjeta</button>
+      </div>
+    `;
+    box.appendChild(row);
+  });
+  box.querySelectorAll('.link').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      if(!confirm('¿Eliminar esta tarjeta? Los gastos ya registrados no se borran.')) return;
+      state.tarjetas = state.tarjetas.filter(t=>t.id!==b.dataset.id);
+      await saveTarjetas();
+      renderTarjetas();
+    });
+  });
+}
+
+// --- deudas ---
+document.getElementById('btnAddDeuda').addEventListener('click', async ()=>{
+  const nombre = document.getElementById('d-nombre').value.trim();
+  const monto = parseFloat(document.getElementById('d-monto').value) || 0;
+  if(!nombre){ alert('Ingresá el nombre de la persona o entidad.'); return; }
+  state.deudas.push({id:uid(), nombre, montoTotal:monto});
+  await saveDeudas();
+  document.getElementById('d-nombre').value="";
+  document.getElementById('d-monto').value="";
+  renderDeudas();
+});
+
+function renderDeudas(){
+  const box = document.getElementById('listaDeudas');
+  box.innerHTML="";
+  document.getElementById('deudasVacio').style.display = state.deudas.length ? 'none':'block';
+  state.deudas.forEach(d=>{
+    const pagos = state.gastos.filter(g=>g.deudaId===d.id);
+    const pagado = pagos.reduce((s,g)=>s+g.monto,0);
+    const resta = Math.max(0, (d.montoTotal||0) - pagado);
+    const row = document.createElement('div');
+    row.className='list-item';
+    row.innerHTML = `
+      <div>
+        <div class="name">${escapeHtml(d.nombre)}</div>
+        <div class="sub">Total: ${fmtGs(d.montoTotal)} · Pagado: ${fmtGs(pagado)}</div>
+      </div>
+      <div class="right">
+        <div class="amt">${fmtGs(resta)}</div>
+        <span class="tag ${resta<=0 ? 'ok':'pend'}">${resta<=0 ? 'saldado':'pendiente'}</span><br>
+        <button class="link" data-id="${d.id}">eliminar</button>
+      </div>
+    `;
+    box.appendChild(row);
+  });
+  box.querySelectorAll('.link').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      if(!confirm('¿Eliminar esta deuda? Los pagos ya registrados no se borran.')) return;
+      state.deudas = state.deudas.filter(d=>d.id!==b.dataset.id);
+      await saveDeudas();
+      renderDeudas();
+    });
+  });
+}
+
+// --- ajustes / sync ---
+document.getElementById('btnGuardarAjustes').addEventListener('click', async ()=>{
+  state.config.sheetUrl = document.getElementById('a-url').value.trim();
+  state.config.autoSync = document.getElementById('a-auto').checked;
+  await saveConfig();
+  document.getElementById('syncStatusAjustes').textContent = "Ajustes guardados.";
+});
+
+async function syncEntry(entry, statusElId){
+  const statusEl = document.getElementById(statusElId);
+  if(!state.config.sheetUrl){
+    if(statusEl) statusEl.textContent = "No configuraste la URL de Google Sheets todavía.";
+    return;
+  }
+  if(statusEl) statusEl.textContent = "Enviando a Google Sheets...";
+  try{
+    await fetch(state.config.sheetUrl, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(entry)
+    });
+    entry.synced = true;
+    await saveGastos();
+    if(statusEl) statusEl.textContent = "Enviado " + new Date().toLocaleTimeString('es-PY');
+  }catch(e){
+    if(statusEl) statusEl.textContent = "No se pudo enviar. Revisá la URL en Ajustes.";
+  }
+}
+
+document.getElementById('btnSyncAll').addEventListener('click', async ()=>{
+  const statusEl = document.getElementById('syncStatusAjustes');
+  if(!state.config.sheetUrl){ statusEl.textContent="Pegá primero la URL de tu Google Apps Script."; return; }
+  const pendientes = state.gastos.filter(g=>!g.synced);
+  if(pendientes.length===0){ statusEl.textContent="Todo ya está sincronizado."; return; }
+  statusEl.textContent = `Enviando ${pendientes.length} gasto(s)...`;
+  for(const entry of pendientes){
+    await syncEntry(entry, null);
+  }
+  statusEl.textContent = `Listo. Se enviaron ${pendientes.length} gasto(s).`;
+});
+
+document.getElementById('btnReset').addEventListener('click', async ()=>{
+  if(!confirm('Esto borra todos tus gastos, tarjetas y deudas guardados en este navegador. ¿Continuar?')) return;
+  state = { gastos:[], tarjetas:[], deudas:[], categoriasExtra:[], config:{sheetUrl:"", autoSync:false} };
+  await saveGastos(); await saveTarjetas(); await saveDeudas(); await saveCategoriasExtra(); await saveConfig();
+  poblarCategorias();
+  renderAll();
+});
+
+function renderAll(){
+  renderReciente();
+  renderResumen();
+  renderTarjetas();
+  renderDeudas();
+  document.getElementById('a-url').value = state.config.sheetUrl || "";
+  document.getElementById('a-auto').checked = !!state.config.autoSync;
+}
+
+async function init(){
+  document.getElementById('f-fecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('hoyLabel').textContent = new Date().toLocaleDateString('es-PY', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  await loadState();
+  poblarCategorias();
+  poblarTarjetasSelect();
+  poblarDeudasSelect();
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>
