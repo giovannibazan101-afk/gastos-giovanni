@@ -452,6 +452,16 @@
     </div>
 
     <div class="card">
+      <h2>Disponible en tus tarjetas</h2>
+      <div class="stat green" style="margin-bottom:14px;">
+        <div class="k">Total disponible</div>
+        <div class="v" id="statDisponibleTotal" style="font-size:18px;">Gs. 0</div>
+      </div>
+      <div id="disponibleTarjetas"></div>
+      <p class="empty" id="disponibleTarjetasVacio" style="display:none;">Todavía no agregaste tarjetas.</p>
+    </div>
+
+    <div class="card">
       <h2>Fijos vs. deudas/tarjetas vs. varios</h2>
       <p class="note" style="margin-top:0;">Así se reparte todo lo que gastaste este mes. "Varios" es todo lo que no es un compromiso fijo: comida, meriendas, combustible, repuestos, etc.</p>
       <div class="chart-wrap"><canvas id="chartDonut"></canvas></div>
@@ -678,7 +688,7 @@
 // PEGÁ ACÁ LA URL DE TU GOOGLE APPS SCRIPT (termina en /exec).
 // Instrucciones completas en el archivo AppsScript_GoogleSheets.gs
 // ======================================================================
-const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxGVS5bopV8zh186uYsq83jJNPzRVPnSccU1VNwZTA3TZ-UdF90ALsUy1BN13C_BE-s/exec";
+const GOOGLE_SHEET_URL = "PEGA_AQUI_TU_URL_DE_GOOGLE_APPS_SCRIPT";
 
 const CATS_DEFAULT = ["Combustible","Comida","Meriendas","Repuestos","Cuota Cooperativa","Seguro de Auto","WiFi / Internet","Pago Tarjeta de Crédito","Deudas","Otro..."];
 
@@ -1270,6 +1280,7 @@ function renderResumen(){
     box.appendChild(row);
   });
 
+  renderDisponibleTarjetas();
   renderChartDonut(totFijo, totDeuda, totVarios);
   renderChartTendencia();
   renderChartCruce();
@@ -1283,6 +1294,40 @@ function coloresChart(){
     grid: '#262838',
     text: '#8B8D96'
   };
+}
+
+function renderDisponibleTarjetas(){
+  const box = document.getElementById('disponibleTarjetas');
+  box.innerHTML = "";
+  document.getElementById('disponibleTarjetasVacio').style.display = state.tarjetas.length ? 'none' : 'block';
+
+  let totalDisponible = 0;
+
+  state.tarjetas.forEach(t=>{
+    const gastosTarjeta = state.gastos.filter(g=>g.tarjetaId===t.id);
+    const compras = gastosTarjeta.filter(g=>g.categoria!=="Pago Tarjeta de Crédito").reduce((s,g)=>s+g.monto,0);
+    const pagos = gastosTarjeta.filter(g=>g.categoria==="Pago Tarjeta de Crédito").reduce((s,g)=>s+g.monto,0);
+    const saldoInicial = parseFloat(t.saldoInicial)||0;
+    const saldoActual = Math.max(0, saldoInicial + compras - pagos);
+    const limite = parseFloat(t.limite)||0;
+    const disponible = limite>0 ? Math.max(0, limite - saldoActual) : null;
+    if(disponible !== null) totalDisponible += disponible;
+
+    const row = document.createElement('div');
+    row.className='list-item';
+    row.innerHTML = `
+      <div>
+        <div class="name">${escapeHtml(t.nombre)}</div>
+        <div class="sub">Saldo: ${fmtGs(saldoActual)}${limite>0 ? ' / '+fmtGs(limite) : ' · sin límite cargado'}</div>
+      </div>
+      <div class="right">
+        <div class="amt" style="color:${disponible!==null ? 'var(--green)' : 'var(--ink-soft)'};">${disponible!==null ? fmtGs(disponible) : '—'}</div>
+      </div>
+    `;
+    box.appendChild(row);
+  });
+
+  document.getElementById('statDisponibleTotal').textContent = fmtGs(totalDisponible);
 }
 
 function renderChartDonut(totFijo, totDeuda, totVarios){
