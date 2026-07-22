@@ -9,19 +9,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root{
-    --bg:#0E1013;
-    --bg-elev:#1A1D22;
-    --bg-elev-2:#22262C;
+    --bg:#0A0B14;
+    --bg-elev:#14151F;
+    --bg-elev-2:#1C1E2A;
     --ink:#EDECE8;
-    --ink-soft:#8B8D93;
+    --ink-soft:#8B8D96;
     --green:#5C9C7C;
     --green-soft:#1C2A22;
     --rust:#C98A63;
     --rust-soft:#2E241D;
     --gold:#D6B370;
     --gold-soft:#2C2618;
-    --line:#2A2D33;
-    --line-strong:#3C4048;
+    --line:#262838;
+    --line-strong:#383B4E;
     --white:#F5F4F1;
   }
   *{box-sizing:border-box;}
@@ -32,7 +32,7 @@
     font-family:'Inter', sans-serif;
     -webkit-font-smoothing:antialiased;
   }
-  .app{max-width:880px;margin:0 auto;padding:24px 20px 80px;}
+  .app{max-width:880px;margin:0 auto;padding:24px 20px 96px;}
 
   header.top{
     display:flex;justify-content:space-between;align-items:flex-end;
@@ -56,25 +56,49 @@
     text-align:right;
   }
 
-  nav.tabs{
-    display:flex;gap:4px;margin-bottom:20px;
-    border-bottom:1px solid var(--line);
-    overflow-x:auto;
+  .bottom-nav{
+    display:none;
+    position:fixed;left:0;right:0;bottom:0;z-index:200;
+    justify-content:space-around;align-items:stretch;
+    background:var(--bg-elev);border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom, 0);
   }
-  nav.tabs button{
-    font-family:'Inter', sans-serif;
-    font-size:13px;font-weight:500;
-    background:none;border:none;
-    padding:10px 14px;
-    color:var(--ink-soft);
+  .bottom-nav button{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+    background:none;border:none;padding:9px 4px 8px;
+    color:var(--ink-soft);font-family:'Inter', sans-serif;font-size:10.5px;
     cursor:pointer;
-    border-bottom:2px solid transparent;
-    white-space:nowrap;
   }
-  nav.tabs button.active{
-    color:var(--ink);
-    border-bottom:2px solid var(--rust);
+  .bottom-nav button svg{width:21px;height:21px;}
+  .bottom-nav button.active{color:var(--ink);}
+  .bottom-nav button.active svg{stroke:var(--rust);color:var(--rust);}
+
+  .more-sheet{
+    position:fixed;inset:0;z-index:300;display:none;
   }
+  .more-sheet.open{display:block;}
+  .more-sheet-backdrop{
+    position:absolute;inset:0;background:rgba(0,0,0,0.55);
+  }
+  .more-sheet-panel{
+    position:absolute;left:0;right:0;bottom:0;
+    background:var(--bg-elev);border-top:1px solid var(--line-strong);
+    border-radius:14px 14px 0 0;
+    padding:10px 16px calc(20px + env(safe-area-inset-bottom, 0));
+    max-width:880px;margin:0 auto;
+  }
+  .more-sheet-handle{
+    width:36px;height:4px;border-radius:2px;background:var(--line-strong);
+    margin:6px auto 14px;
+  }
+  .more-item{
+    width:100%;display:flex;align-items:center;gap:12px;
+    background:none;border:none;border-bottom:1px solid var(--line);
+    color:var(--ink);font-family:'Inter', sans-serif;font-size:14px;font-weight:500;
+    padding:14px 4px;cursor:pointer;text-align:left;
+  }
+  .more-item:last-child{border-bottom:none;}
+  .more-item svg{width:19px;height:19px;stroke:var(--ink-soft);flex-shrink:0;}
 
   section.view{display:none;}
   section.view.active{display:block;}
@@ -274,15 +298,6 @@
     <div class="fecha" id="hoyLabel"></div>
   </header>
 
-  <nav class="tabs">
-    <button data-view="registrar" class="active">Registrar</button>
-    <button data-view="resumen">Dashboard</button>
-    <button data-view="tarjetas">Tarjetas</button>
-    <button data-view="deudas">Deudas</button>
-    <button data-view="fijos">Fijos</button>
-    <button data-view="historial">Historial</button>
-  </nav>
-
   <!-- REGISTRAR -->
   <section class="view active" id="view-registrar">
     <div class="card">
@@ -350,6 +365,39 @@
     </div>
   </section>
 
+  <!-- INGRESOS -->
+  <section class="view" id="view-ingresos">
+    <div class="card">
+      <h2>Nuevo ingreso</h2>
+      <div class="row">
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="i-fecha">
+        </div>
+        <div>
+          <label>Monto (Gs.)</label>
+          <input type="number" id="i-monto" min="0" placeholder="0">
+        </div>
+      </div>
+      <label>Categoría</label>
+      <select id="i-categoria">
+        <option>Sueldo</option>
+        <option>Transferencia recibida</option>
+        <option>Cobro / Venta</option>
+        <option>Otro</option>
+      </select>
+      <label>Origen / de quién (opcional)</label>
+      <input type="text" id="i-origen" placeholder="Ej: Pago de Fulano, aguinaldo, venta...">
+      <button class="primary" id="btnGuardarIngreso">Guardar ingreso</button>
+      <div class="sync-status" id="syncStatusIngreso"></div>
+    </div>
+    <div class="card">
+      <h2>Ingresos recientes</h2>
+      <div id="listaIngresos"></div>
+      <p class="empty" id="ingresosVacio" style="display:none;">Todavía no registraste ningún ingreso.</p>
+    </div>
+  </section>
+
   <!-- DASHBOARD -->
   <section class="view" id="view-resumen">
     <div class="month-nav">
@@ -374,27 +422,18 @@
     </div>
 
     <div class="card">
-      <h2>Ingreso mensual</h2>
-      <div class="row">
-        <div>
-          <label>Tu ingreso (Gs.)</label>
-          <input type="number" id="ing-monto" min="0" placeholder="0">
+      <h2>Ingresos del mes</h2>
+      <div class="stat-grid" style="margin-bottom:0;">
+        <div class="stat green">
+          <div class="k">Total ingresado</div>
+          <div class="v" id="statTotalIngresos" style="font-size:18px;">Gs. 0</div>
         </div>
-        <div>
-          <label style="opacity:0;">.</label>
-          <button class="secondary" id="btnGuardarIngreso" style="width:100%;">Guardar</button>
-        </div>
-      </div>
-      <div class="stat-grid" style="margin-top:14px;margin-bottom:0;">
         <div class="stat gold">
-          <div class="k">% de tu ingreso gastado</div>
+          <div class="k">% gastado de tu ingreso</div>
           <div class="v" id="statPctIngreso" style="font-size:18px;">—</div>
         </div>
-        <div class="stat green">
-          <div class="k">Disponible</div>
-          <div class="v" id="statDisponible" style="font-size:18px;">—</div>
-        </div>
       </div>
+      <p class="note" id="notaIngresos" style="margin-top:10px;margin-bottom:0;">Registrá tus ingresos (sueldo, transferencias, cobros) en la pestaña Ingresos.</p>
     </div>
 
     <div class="stat-grid tres">
@@ -592,6 +631,48 @@
 
 </div>
 
+<nav class="bottom-nav" id="bottomNav">
+  <button data-view="registrar" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+    <span>Registrar</span>
+  </button>
+  <button data-view="ingresos">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 15l5-5 4 4 7-7"/><path d="M14 7h6v6"/></svg>
+    <span>Ingresos</span>
+  </button>
+  <button data-view="resumen">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+    <span>Dashboard</span>
+  </button>
+  <button data-view="tarjetas">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
+    <span>Tarjetas</span>
+  </button>
+  <button id="btnMas" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+    <span>Más</span>
+  </button>
+</nav>
+
+<div class="more-sheet" id="moreSheet">
+  <div class="more-sheet-backdrop" id="moreSheetBackdrop"></div>
+  <div class="more-sheet-panel">
+    <div class="more-sheet-handle"></div>
+    <button data-view="deudas" class="more-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>
+      Deudas
+    </button>
+    <button data-view="fijos" class="more-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="4"/></svg>
+      Fijos
+    </button>
+    <button data-view="historial" class="more-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      Historial
+    </button>
+  </div>
+</div>
+
 <script>
 // ======================================================================
 // PEGÁ ACÁ LA URL DE TU GOOGLE APPS SCRIPT (termina en /exec).
@@ -619,7 +700,7 @@ let state = {
   deudas: [],
   categoriasExtra: [],
   recurrentes: [],
-  ingresoMensual: 0
+  ingresos: []
 };
 
 let chartDonut=null, chartTendencia=null, chartCruce=null;
@@ -656,8 +737,8 @@ async function loadState(){
     if(r) state.recurrentes = JSON.parse(r.value);
   }catch(e){}
   try{
-    const ing = await window.storage.get('ingresoMensual');
-    if(ing) state.ingresoMensual = JSON.parse(ing.value);
+    const ing = await window.storage.get('ingresos');
+    if(ing) state.ingresos = JSON.parse(ing.value);
   }catch(e){}
 }
 
@@ -676,8 +757,8 @@ async function saveCategoriasExtra(){
 async function saveRecurrentes(){
   try{ await window.storage.set('recurrentes', JSON.stringify(state.recurrentes)); }catch(e){ console.error(e); }
 }
-async function saveIngreso(){
-  try{ await window.storage.set('ingresoMensual', JSON.stringify(state.ingresoMensual)); }catch(e){ console.error(e); }
+async function saveIngresos(){
+  try{ await window.storage.set('ingresos', JSON.stringify(state.ingresos)); }catch(e){ console.error(e); }
 }
 
 function todasCategorias(){
@@ -740,18 +821,41 @@ function poblarDeudasSelect(){
   });
 }
 
-// --- tabs ---
-document.querySelectorAll('nav.tabs button').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('section.view').forEach(v=>v.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('view-'+btn.dataset.view).classList.add('active');
-    if(btn.dataset.view==='resumen') renderResumen();
-    if(btn.dataset.view==='fijos') renderFijos();
-    if(btn.dataset.view==='historial') renderHistorial();
+// --- navegación inferior + panel "Más" ---
+function cambiarVista(view){
+  const esSeccionMas = ['deudas','fijos','historial'].includes(view);
+  document.querySelectorAll('.bottom-nav button[data-view]').forEach(b=>{
+    b.classList.toggle('active', b.dataset.view===view);
   });
+  document.getElementById('btnMas').classList.toggle('active', esSeccionMas);
+  document.querySelectorAll('section.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  if(view==='ingresos') renderIngresos();
+  if(view==='resumen') renderResumen();
+  if(view==='fijos') renderFijos();
+  if(view==='historial') renderHistorial();
+  cerrarMoreSheet();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+document.querySelectorAll('.bottom-nav button[data-view]').forEach(btn=>{
+  btn.addEventListener('click', ()=> cambiarVista(btn.dataset.view));
 });
+document.querySelectorAll('.more-item[data-view]').forEach(btn=>{
+  btn.addEventListener('click', ()=> cambiarVista(btn.dataset.view));
+});
+
+function abrirMoreSheet(){
+  document.getElementById('moreSheet').classList.add('open');
+}
+function cerrarMoreSheet(){
+  document.getElementById('moreSheet').classList.remove('open');
+}
+document.getElementById('btnMas').addEventListener('click', ()=>{
+  const abierto = document.getElementById('moreSheet').classList.contains('open');
+  if(abierto) cerrarMoreSheet(); else abrirMoreSheet();
+});
+document.getElementById('moreSheetBackdrop').addEventListener('click', cerrarMoreSheet);
 
 // --- form conditional fields ---
 document.getElementById('f-categoria').addEventListener('change', (e)=>{
@@ -868,11 +972,7 @@ function cargarEnFormulario(g){
   }
   document.getElementById('btnGuardar').textContent = 'Guardar cambios';
   document.getElementById('btnCancelarEdicion').classList.remove('hidden');
-  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('section.view').forEach(v=>v.classList.remove('active'));
-  document.querySelector('nav.tabs button[data-view="registrar"]').classList.add('active');
-  document.getElementById('view-registrar').classList.add('active');
-  window.scrollTo({top:0, behavior:'smooth'});
+  cambiarVista('registrar');
 }
 
 function salirModoEdicion(){
@@ -1012,11 +1112,59 @@ document.getElementById('btnLimpiarFiltros').addEventListener('click', ()=>{
 
 // --- resumen ---
 document.getElementById('btnGuardarIngreso').addEventListener('click', async ()=>{
-  const v = parseFloat(document.getElementById('ing-monto').value) || 0;
-  state.ingresoMensual = v;
-  await saveIngreso();
+  const monto = parseFloat(document.getElementById('i-monto').value);
+  if(!monto || monto<=0){ alert('Ingresá un monto válido.'); return; }
+  const fecha = document.getElementById('i-fecha').value || new Date().toISOString().slice(0,10);
+  const categoria = document.getElementById('i-categoria').value;
+  const origen = document.getElementById('i-origen').value.trim();
+
+  const entry = {
+    id: uid(), fecha, categoria, origen,
+    descripcion: origen || categoria,
+    monto, synced:false
+  };
+  state.ingresos.unshift(entry);
+  await saveIngresos();
+
+  document.getElementById('i-monto').value="";
+  document.getElementById('i-origen').value="";
+
+  renderIngresos();
   renderResumen();
+  if(urlConfigurada()) syncIngreso(entry, 'syncStatusIngreso');
 });
+
+function renderIngresos(){
+  const box = document.getElementById('listaIngresos');
+  box.innerHTML="";
+  document.getElementById('ingresosVacio').style.display = state.ingresos.length ? 'none':'block';
+  state.ingresos.slice(0,20).forEach(i=>{
+    const row = document.createElement('div');
+    row.className='entry';
+    row.innerHTML = `
+      <span class="fecha-c">${i.fecha}</span>
+      <span><span class="desc">${escapeHtml(i.descripcion)}</span><span class="cat">${escapeHtml(i.categoria)}</span></span>
+      <span class="monto" style="color:var(--green);">+${fmtGs(i.monto)}</span>
+      <button class="del" title="Eliminar" data-id="${i.id}">✕</button>
+    `;
+    box.appendChild(row);
+  });
+  box.querySelectorAll('[data-id]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      state.ingresos = state.ingresos.filter(i=>i.id!==b.dataset.id);
+      await saveIngresos();
+      renderIngresos();
+      renderResumen();
+    });
+  });
+}
+
+function ingresosDeMes(y, m){
+  return state.ingresos.filter(i=>{
+    const f = new Date(i.fecha+"T00:00:00");
+    return f.getFullYear()===y && f.getMonth()===m;
+  });
+}
 
 document.getElementById('mesPrev').addEventListener('click', ()=>{
   mesActual.setMonth(mesActual.getMonth()-1);
@@ -1089,15 +1237,17 @@ function renderResumen(){
     notaProy.textContent = 'La proyección solo aplica al mes en curso.';
   }
 
-  // --- ingreso mensual ---
-  document.getElementById('ing-monto').value = state.ingresoMensual || "";
-  if(state.ingresoMensual > 0){
-    const pct = (total / state.ingresoMensual) * 100;
+  // --- ingresos del mes ---
+  const ingresosMes = ingresosDeMes(y, m).reduce((s,i)=>s+i.monto, 0);
+  document.getElementById('statTotalIngresos').textContent = fmtGs(ingresosMes);
+  const notaIngresos = document.getElementById('notaIngresos');
+  if(ingresosMes > 0){
+    const pct = (total / ingresosMes) * 100;
     document.getElementById('statPctIngreso').textContent = pct.toFixed(0) + '%';
-    document.getElementById('statDisponible').textContent = fmtGs(state.ingresoMensual - total);
+    notaIngresos.textContent = `Te queda disponible: ${fmtGs(ingresosMes - total)}`;
   } else {
-    document.getElementById('statPctIngreso').textContent = 'Cargá tu ingreso';
-    document.getElementById('statDisponible').textContent = '—';
+    document.getElementById('statPctIngreso').textContent = '—';
+    notaIngresos.textContent = 'Registrá tus ingresos (sueldo, transferencias, cobros) en la pestaña Ingresos.';
   }
 
   // --- ranking de categorías ---
@@ -1130,8 +1280,8 @@ function coloresChart(){
     fijo: '#D6B370',    // gold
     deuda: '#C98A63',   // rust
     varios: '#5C9C7C',  // green
-    grid: '#2A2D33',
-    text: '#8B8D93'
+    grid: '#262838',
+    text: '#8B8D96'
   };
 }
 
@@ -1147,8 +1297,8 @@ function renderChartDonut(totFijo, totDeuda, totVarios){
       labels: ['Fijos (cooperativa, seguro, wifi)', 'Deudas / tarjetas', 'Varios (día a día)'],
       datasets: [{
         data: hayDatos ? data : [1,1,1],
-        backgroundColor: hayDatos ? [c.fijo, c.deuda, c.varios] : ['#2A2D33','#2A2D33','#2A2D33'],
-        borderColor: '#1A1D22',
+        backgroundColor: hayDatos ? [c.fijo, c.deuda, c.varios] : ['#262838','#262838','#262838'],
+        borderColor: '#14151F',
         borderWidth: 2
       }]
     },
@@ -1502,29 +1652,57 @@ async function syncTarjetas(statusElId){
   }
 }
 
+async function syncIngreso(entry, statusElId){
+  const statusEl = statusElId ? document.getElementById(statusElId) : null;
+  if(!urlConfigurada()){
+    if(statusEl) statusEl.textContent = "Todavía no pegaste tu URL de Google Sheets en el código (buscá GOOGLE_SHEET_URL).";
+    return;
+  }
+  if(statusEl) statusEl.textContent = "Enviando a Google Sheets...";
+  try{
+    await fetch(GOOGLE_SHEET_URL, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ tipo:'ingreso', ...entry })
+    });
+    entry.synced = true;
+    await saveIngresos();
+    if(statusEl) statusEl.textContent = "Enviado " + new Date().toLocaleTimeString('es-PY');
+  }catch(e){
+    if(statusEl) statusEl.textContent = "No se pudo enviar. Revisá la URL en el código.";
+  }
+}
+
 document.getElementById('btnSyncAll').addEventListener('click', async ()=>{
   const statusEl = document.getElementById('syncStatusAjustes');
   if(!urlConfigurada()){ statusEl.textContent="Todavía no pegaste tu URL de Google Sheets en el código (buscá GOOGLE_SHEET_URL)."; return; }
   await syncTarjetas(null);
-  const pendientes = state.gastos.filter(g=>!g.synced);
-  if(pendientes.length===0){ statusEl.textContent="Tarjetas sincronizadas. El resto ya estaba al día."; return; }
-  statusEl.textContent = `Enviando ${pendientes.length} gasto(s)...`;
-  for(const entry of pendientes){
+  const pendientesGastos = state.gastos.filter(g=>!g.synced);
+  const pendientesIngresos = state.ingresos.filter(i=>!i.synced);
+  const total = pendientesGastos.length + pendientesIngresos.length;
+  if(total===0){ statusEl.textContent="Tarjetas sincronizadas. El resto ya estaba al día."; return; }
+  statusEl.textContent = `Enviando ${total} movimiento(s)...`;
+  for(const entry of pendientesGastos){
     await syncEntry(entry, null);
   }
-  statusEl.textContent = `Listo. Se enviaron ${pendientes.length} gasto(s) y las tarjetas.`;
+  for(const entry of pendientesIngresos){
+    await syncIngreso(entry, null);
+  }
+  statusEl.textContent = `Listo. Se enviaron ${total} movimiento(s) y las tarjetas.`;
 });
 
 document.getElementById('btnReset').addEventListener('click', async ()=>{
   if(!confirm('Esto borra todos tus gastos, tarjetas y deudas guardados en este navegador. ¿Continuar?')) return;
-  state = { gastos:[], tarjetas:[], deudas:[], categoriasExtra:[], recurrentes:[], ingresoMensual:0 };
-  await saveGastos(); await saveTarjetas(); await saveDeudas(); await saveCategoriasExtra(); await saveRecurrentes(); await saveIngreso();
+  state = { gastos:[], tarjetas:[], deudas:[], categoriasExtra:[], recurrentes:[], ingresos:[] };
+  await saveGastos(); await saveTarjetas(); await saveDeudas(); await saveCategoriasExtra(); await saveRecurrentes(); await saveIngresos();
   poblarCategorias();
   renderAll();
 });
 
 function renderAll(){
   renderReciente();
+  renderIngresos();
   renderResumen();
   renderTarjetas();
   renderDeudas();
@@ -1534,6 +1712,7 @@ function renderAll(){
 
 async function init(){
   document.getElementById('f-fecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('i-fecha').value = new Date().toISOString().slice(0,10);
   document.getElementById('hoyLabel').textContent = new Date().toLocaleDateString('es-PY', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
   await loadState();
   await generarFijosDelMes();
@@ -1559,6 +1738,7 @@ function verificarPin(){
   if(pinInput.value === PIN_CORRECTO){
     document.getElementById('lockScreen').style.display = 'none';
     document.getElementById('appRoot').style.display = 'block';
+    document.getElementById('bottomNav').style.display = 'flex';
     if(!iniciado){ iniciado = true; init(); }
   } else {
     pinError.textContent = "PIN incorrecto";
